@@ -7,10 +7,9 @@
  * 簡易テスト：
  *  - resources() が -1 を返さないか？
  *  - free_resources() が -1 を返さないか？
- * などを確認
  */
 
-// 仮の child_config
+// child_config のモック
 static struct child_config dummy_config = {
     .uid       = 1000,
     .argc      = 1,
@@ -21,8 +20,8 @@ static struct child_config dummy_config = {
 };
 
 int test_resources(void) {
-    // ここでは実際に /sys/fs/cgroup/... への書き込みができるかは
-    // 環境依存なので、一旦呼び出してエラーが出ないか程度を見る例
+    // 実際に /sys/fs/cgroup/... への書き込みができるかは
+    // 環境依存なので、一旦呼び出してエラーが出ないか程度を見る
     if (resources(&dummy_config) != 0) {
         fprintf(stderr, "resources() returned error\n");
         return 1;

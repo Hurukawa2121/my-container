@@ -15,7 +15,7 @@
 #include "resources.h"
 #include "userns.h"
 
-// 適当なホスト名を決める (元コードのchoose_hostname)
+// 適当なホスト名を決める
 static int choose_hostname(char *buff, size_t len) {
     snprintf(buff, len, "mycontainer-%d", getpid());
     return 0;
@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // Linuxバージョンチェック (元コード例を簡略化)
+    // Linuxバージョンチェック
     struct utsname host;
     if (uname(&host) < 0) {
         perror("uname failed");

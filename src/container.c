@@ -59,8 +59,7 @@ int capabilities(void) {
         }
     }
 
-    // inheritable set を削除
-    // これによりアンビエントセットもクリア
+    // inheritable set を削除 (アンビエントセットもクリア)
     fprintf(stderr, "   inheritable...");
     cap_t caps = cap_get_proc();
     if (!caps) {
