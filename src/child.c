@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <grp.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -31,7 +32,7 @@ bool set_config(struct child_config *config) {
     return true;
 }
 
-bool switch_uid_gid(int uid, int gid) {
+bool switch_uid_gid(int uid, int gid, int fd) {
     if (setgroups(1, (gid_t[]){uid}) ||
         setresgid(uid, uid, uid) ||
         setresuid(uid, uid, uid)) {
@@ -48,7 +49,7 @@ bool switch_uid_gid(int uid, int gid) {
         return false;
     }
 
-    if (close(config->fd) < 0) {
+    if (close(fd) < 0) {
         perror("close fd");
         return false;
     }
@@ -65,7 +66,7 @@ int child(void *arg) {
 
     // userns 内で uid/gidを切り替え
     fprintf(stderr, "=> switching to uid %d / gid %d...\n", config->uid, config->uid);
-    if (!switch_uid_gid(config->uid, config->uid)) {
+    if (!switch_uid_gid(config->uid, config->uid, config->fd)) {
         return -1;
     }
 
