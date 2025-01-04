@@ -1,13 +1,15 @@
 #define _GNU_SOURCE
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/errno.h>
+#include <sys/capability.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/stat.h>
 #include <sys/mount.h>
-#include <linux/capability.h>
 #include <seccomp.h>
 #include <linux/seccomp.h>
 #include <fcntl.h>

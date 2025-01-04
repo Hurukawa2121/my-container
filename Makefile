@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS  = -Wall -Werror -O2 -g
+CFLAGS  = -Wall -Werror -g
 LDFLAGS = -lcap -lseccomp
 
 INCLUDES = -I./include

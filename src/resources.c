@@ -5,114 +5,135 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/resource.h>
-#include <fcntl.h>
-#include <linux/limits.h>
-#include <string.h>
+#include <sys/param.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <string.h>
+#include <limits.h>
 
-#include "resources.h"
+#include "container.h"
 
-#define MEMORY "1073741824" // 1GB
-#define SHARES "256"
-#define PIDS   "64"
-#define WEIGHT "10"
-#define FD_COUNT 64
-
-struct cgrp_setting {
-    char name[256];
-    char value[256];
+// cgroup v2 用リソース設定リスト
+static struct cgrp_setting {
+    char name[256];   // 例: "memory.max", "pids.max", "cpu.weight" 等
+    char value[256];  // 例: "1073741824", "64", "256" など
+} cgrp_settings[] = {
+    { "memory.max",  "1073741824" }, // 1GB
+    { "pids.max",    "64"         }, // プロセス数64
+    // cgroup v2 では cpu.weight (1〜10000) でCPU割合を指定
+    { "cpu.weight",  "256"       },  // 例: 256 (旧v1のcpu.shares=256相当)
+    // blkio => cgroup v2では "io.weight" (1〜1000,スケジューラ依存)
+    { "io.weight",   "50"        },  // 例: 50
+    { "", "" } // 終端
 };
 
-struct cgrp_control {
-    char control[256];
-    struct cgrp_setting **settings;
-};
+// cgroup v2のディレクトリを作成し、リソースを設定する
+int resources(struct child_config *config)
+{
+    fprintf(stderr, "=> setting cgroups (v2)...\n");
 
-static struct cgrp_setting add_to_tasks = {
-    .name = "tasks",
-    .value = "0"
-};
-
-// cgroups配列
-static struct cgrp_control *cgrps[] = {
-    &(struct cgrp_control){
-        .control = "memory",
-        .settings = (struct cgrp_setting *[]) {
-            &(struct cgrp_setting){ .name = "memory.limit_in_bytes", .value = MEMORY },
-            &(struct cgrp_setting){ .name = "memory.kmem.limit_in_bytes", .value = MEMORY },
-            &add_to_tasks,
-            NULL
+    // 1. 親cgroupの subtree_control を有効化
+    //    (root cgroupの "/sys/fs/cgroup/cgroup.subtree_control" などに書き込み)
+    {
+        const char *parent_control = "/sys/fs/cgroup/cgroup.subtree_control";
+        int fd = open(parent_control, O_WRONLY);
+        if (fd < 0) {
+            fprintf(stderr, "open %s failed: %m\n", parent_control);
+            return -1;
         }
-    },
-    &(struct cgrp_control){
-        .control = "cpu",
-        .settings = (struct cgrp_setting *[]) {
-            &(struct cgrp_setting){ .name = "cpu.shares", .value = SHARES },
-            &add_to_tasks,
-            NULL
-        }
-    },
-    &(struct cgrp_control){
-        .control = "pids",
-        .settings = (struct cgrp_setting *[]) {
-            &(struct cgrp_setting){ .name = "pids.max", .value = PIDS },
-            &add_to_tasks,
-            NULL
-        }
-    },
-    &(struct cgrp_control){
-        .control = "blkio",
-        .settings = (struct cgrp_setting *[]) {
-            &(struct cgrp_setting){ .name = "blkio.weight", .value = WEIGHT },
-            &add_to_tasks,
-            NULL
-        }
-    },
-    NULL
-};
-
-int resources(struct child_config *config) {
-    fprintf(stderr, "=> setting cgroups...\n");
-    // cgroupディレクトリを作って設定
-    for (struct cgrp_control **cgrp = cgrps; *cgrp; cgrp++) {
-        char dir[PATH_MAX];
-        memset(dir, 0, sizeof(dir));
-        snprintf(dir, sizeof(dir), "/sys/fs/cgroup/%s/%s", (*cgrp)->control, config->hostname);
-
-        if (mkdir(dir, S_IRUSR | S_IWUSR | S_IXUSR) != 0) {
-            if (errno != EEXIST) {
-                perror("mkdir cgroup failed");
-                return -1;
-            }
-        }
-        // 各設定ファイルに書き込み
-        for (struct cgrp_setting **setting = (*cgrp)->settings; *setting; setting++) {
-            char path[PATH_MAX];
-            memset(path, 0, sizeof(path));
-            snprintf(path, sizeof(path), "%s/%s", dir, (*setting)->name);
-
-            int fd = open(path, O_WRONLY);
-            if (fd < 0) {
-                perror("open cgroup setting failed");
-                return -1;
-            }
-            if (write(fd, (*setting)->value, strlen((*setting)->value)) == -1) {
-                perror("write cgroup setting failed");
-                close(fd);
-                return -1;
-            }
+        // 有効にしたいコントローラ: memory, cpu, pids, ioなど
+        const char *controllers = "+memory +cpu +pids +io";
+        if (write(fd, controllers, strlen(controllers)) == -1) {
+            fprintf(stderr, "writing to %s failed: %m\n", parent_control);
             close(fd);
+            return -1;
         }
+        close(fd);
     }
 
-    // RLIMIT_NOFILE 制限
-    fprintf(stderr, "=> setting rlimit NOFILE to %d...\n", FD_COUNT);
+    // 2. cgroupディレクトリ "/sys/fs/cgroup/<hostname>" を作成
+    char dir[PATH_MAX];
+    snprintf(dir, sizeof(dir), "/sys/fs/cgroup/%s", config->hostname);
+
+    if (mkdir(dir, 0755) && errno != EEXIST) {
+        fprintf(stderr, "mkdir %s failed: %m\n", dir);
+        return -1;
+    }
+
+    // 3. cgroup設定ファイル (memory.max 等) に値を書き込み
+    for (int i = 0; cgrp_settings[i].name[0] != '\0'; i++) {
+        char path[PATH_MAX * 2];
+        snprintf(path, sizeof(path), "%s/%s", dir, cgrp_settings[i].name);
+
+        int fd = open(path, O_WRONLY);
+        if (fd < 0) {
+            fprintf(stderr, "open %s failed: %m\n", path);
+            return -1;
+        }
+        if (write(fd, cgrp_settings[i].value, strlen(cgrp_settings[i].value)) == -1) {
+            fprintf(stderr, "write to %s failed: %m\n", path);
+            close(fd);
+            return -1;
+        }
+        close(fd);
+    }
+
+    // 4. cgroup.procs に "0" を書き込んで、このプロセスを所属させる
+    {
+        char procs_path[PATH_MAX * 2];
+        snprintf(procs_path, sizeof(procs_path), "%s/cgroup.procs", dir);
+
+        int fd = open(procs_path, O_WRONLY);
+        if (fd < 0) {
+            fprintf(stderr, "open %s failed: %m\n", procs_path);
+            return -1;
+        }
+        if (write(fd, "0", 1) == -1) {
+            fprintf(stderr, "write to %s failed: %m\n", procs_path);
+            close(fd);
+            return -1;
+        }
+        close(fd);
+    }
+
+    // 5. 他のリソース制限 (ulimit相当)
+    fprintf(stderr, "=> setting rlimit NOFILE to 64...\n");
     struct rlimit rl = {
-        .rlim_cur = FD_COUNT,
-        .rlim_max = FD_COUNT
+        .rlim_cur = 64,
+        .rlim_max = 64
     };
     if (setrlimit(RLIMIT_NOFILE, &rl) != 0) {
-        perror("setrlimit failed");
+        fprintf(stderr, "setrlimit(RLIMIT_NOFILE) failed: %m\n");
+        return -1;
+    }
+
+    fprintf(stderr, "=> cgroup v2 done.\n");
+    return 0;
+}
+
+int free_resources(struct child_config *config) {
+    fprintf(stderr, "=> cleaning cgroups (v2)...\n");
+
+    // プロセスが残っていると削除できないので
+    // move processes out from /sys/fs/cgroup/testhostname
+    char parent_cgroup[] = "/sys/fs/cgroup/cgroup.procs"; // root cgroup
+    char my_pid[32];
+    snprintf(my_pid, sizeof(my_pid), "%d", getpid());
+
+    int fd = open(parent_cgroup, O_WRONLY);
+    if (fd >= 0) {
+        write(fd, my_pid, strlen(my_pid));
+        close(fd);
+    }
+
+    // cgroupディレクトリを削除する
+    char dir[PATH_MAX * 2];
+    snprintf(dir, sizeof(dir), "/sys/fs/cgroup/%s", config->hostname);
+
+    // cgroup内のプロセスを抜いてから (parent cgroupに移動)
+    if (rmdir(dir) < 0) {
+        fprintf(stderr, "rmdir %s failed: %m\n", dir);
+        // 続行は可能だが、ここではエラー扱い
         return -1;
     }
 
@@ -120,33 +141,3 @@ int resources(struct child_config *config) {
     return 0;
 }
 
-int free_resources(struct child_config *config) {
-    fprintf(stderr, "=> cleaning cgroups...\n");
-    for (struct cgrp_control **cgrp = cgrps; *cgrp; cgrp++) {
-        char dir[PATH_MAX];
-        char task[PATH_MAX];
-        memset(dir, 0, sizeof(dir));
-        memset(task, 0, sizeof(task));
-
-        snprintf(dir,  sizeof(dir),  "/sys/fs/cgroup/%s/%s", (*cgrp)->control, config->hostname);
-        snprintf(task, sizeof(task), "/sys/fs/cgroup/%s/tasks", (*cgrp)->control);
-
-        // タスクを root cgroup に戻す ( "0" = current process )
-        int tfd = open(task, O_WRONLY);
-        if (tfd < 0) {
-            perror("open tasks failed");
-            continue;
-        }
-        if (write(tfd, "0", 2) < 0) {
-            perror("write tasks failed");
-        }
-        close(tfd);
-
-        // ディレクトリ削除
-        if (rmdir(dir) != 0) {
-            perror("rmdir cgroup failed");
-        }
-    }
-    fprintf(stderr, "done.\n");
-    return 0;
-}

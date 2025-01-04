@@ -25,7 +25,6 @@ int main(int argc, char **argv) {
     struct child_config config;
     memset(&config, 0, sizeof(config));
 
-    int err = 0;
     int sockets[2] = {0};
     pid_t child_pid = 0;
     int opt = 0;

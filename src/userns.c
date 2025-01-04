@@ -1,6 +1,8 @@
 #define _GNU_SOURCE
+#include <sched.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
