@@ -10,11 +10,12 @@ $ sudo apt update
 $ sudo apt install -y build-essential libcap-dev libseccomp-dev cmake
 ```
 
-2. Makefile があるディレクトリへ移動
+2. `build/` へ移動
 
 3. ビルド
   - `container_app` と `test_app` が生成される。
 ```sh
+$ cmake ..
 $ make
 ```
 
