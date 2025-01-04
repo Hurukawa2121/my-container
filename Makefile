@@ -8,7 +8,7 @@ SOURCES_MAIN   = src/main.c src/child.c src/container.c src/resources.c src/user
 OBJECTS_MAIN   = $(SOURCES_MAIN:.c=.o)
 TARGET_MAIN    = container_app
 
-SOURCES_TEST   = test/test_main.c test/test_resources.c
+SOURCES_TEST   = test/main.c test/resources.c
 OBJECTS_TEST   = $(SOURCES_TEST:.c=.o)
 TARGET_TEST    = test_app
 

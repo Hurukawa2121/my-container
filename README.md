@@ -13,19 +13,20 @@ $ sudo apt install -y build-essential libcap-dev libseccomp-dev
 2. Makefile があるディレクトリへ移動
 
 3. ビルド
-  - 成功すると、container_app と test_app が生成される。
+  - `container_app` と `test_app` が生成される。
 ```sh
 $ make
 ```
 
 4. テスト実行
-  - test_app を起動して、テスト結果が表示される。
+  - `test_app` を起動し、テスト結果が表示される。
+  - `root` 特権が要る可能性がある。
 ```sh
 $ make test
 ```
 
 5. クリーンアップ
-  - ビルド生成物（.o や 実行ファイル）を削除して、ソースのみの状態に戻る。
+  - ビルド生成物を削除する（ソースの状態に戻る）。
 ```sh
 $ make clean
 ```
