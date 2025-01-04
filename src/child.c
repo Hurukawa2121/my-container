@@ -40,12 +40,12 @@ bool switch_uid_gid(int uid, int gid, int fd) {
         return false;
     }
 
-    if (capabilities() < 0) {
-        fprintf(stderr, "capabilities() failed\n");
+    if (drop_capabilities() < 0) {
+        fprintf(stderr, "drop_capabilities() failed\n");
         return false;
     }
-    if (syscalls() < 0) {
-        fprintf(stderr, "syscalls() failed\n");
+    if (restrict_syscalls() < 0) {
+        fprintf(stderr, "restrict_syscalls() failed\n");
         return false;
     }
 

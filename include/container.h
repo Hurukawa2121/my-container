@@ -14,8 +14,8 @@ struct child_config {
 };
 
 // 関数プロトタイプ
-int capabilities(void);
-int syscalls(void);
+int drop_capabilities(void);
+int restrict_syscalls(void);
 int mounts(struct child_config *config);
 
 #endif

@@ -45,7 +45,7 @@ $ make clean
 ├── src
 │   ├── main.c      // clone() 呼び出しなど引数処理や最初の初期化
 │   ├── child.c     // 子プロセスが実行するメイン処理
-│   ├── container.c // capabilities(), syscalls(), mounts() などコンテナ構築関連
+│   ├── container.c // drop_capabilities(), restrict_syscalls(), mounts() などコンテナ構築関連
 │   ├── resources.c // cgroups 設定や rlimit 設定など
 │   └── userns.c    // userns(), handle_child_uid_map() など user namespace 関連
 ├── test
@@ -61,7 +61,7 @@ $ make clean
 - **`namespaces`**（**名前空間**）
   - カーネルオブジェクト（プロセスIDやネットワークスタックなど）をホストから分離し、特定のプロセスツリーのみがアクセス可能にする仕組み。
   - 例: PID 名前空間を使うと、コンテナ内のプロセスしか見えなくなる。
-- **`capabilities`**
+- **`drop_capabilities`**
   - `root`（UID 0）の権限を機能ごとに細分化して、権限を最小限にする仕組み。
   - 例: `CAP_NET_ADMIN`（ネットワーク管理の権限）, `CAP_SYS_ADMIN`（システム操作の権限）
 - **`cgroups`**（**コントロールグループ**）
@@ -73,7 +73,7 @@ $ make clean
   - 例: `ulimit` コマンド
 - **`seccomp`**
   - システムコールを制限する仕組み。
-  - `capabilities` や `setrlimit` と同様、システムコールを通じて設定する。
+  - `drop_capabilities` や `setrlimit` と同様、システムコールを通じて設定する。
 
 #### 注意事項
 
