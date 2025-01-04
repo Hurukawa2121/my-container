@@ -64,7 +64,7 @@ int child(void *arg) {
     }
 
     // userns 内で uid/gidを切り替え
-    ffprintf(stderr, "=> switching to uid %d / gid %d...\n", uid, uid);
+    fprintf(stderr, "=> switching to uid %d / gid %d...\n", config->uid, config->uid);
     if (!switch_uid_gid(config->uid, config->uid)) {
         return -1;
     }
