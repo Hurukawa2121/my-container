@@ -108,7 +108,7 @@ int resources(struct child_config *config)
     }
 
     fprintf(stderr, "=> cgroup v2 done.\n");
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int free_resources(struct child_config *config) {
@@ -138,6 +138,6 @@ int free_resources(struct child_config *config) {
     }
 
     fprintf(stderr, "done.\n");
-    return 0;
+    return EXIT_SUCCESS;
 }
 

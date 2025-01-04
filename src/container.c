@@ -81,7 +81,7 @@ int capabilities(void) {
     cap_free(caps);
 
     fprintf(stderr, "done.\n");
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int syscalls(void) {
@@ -153,7 +153,7 @@ int syscalls(void) {
     seccomp_release(ctx);
 
     fprintf(stderr, "=> syscalls filtered.\n");
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int mounts(struct child_config *config) {
@@ -208,5 +208,5 @@ int mounts(struct child_config *config) {
     }
 
     fprintf(stderr, "=> mounts done.\n");
-    return 0;
+    return EXIT_SUCCESS;
 }

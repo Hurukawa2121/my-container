@@ -59,5 +59,5 @@ int child(void *arg) {
         perror("execve failed");
         return -1;
     }
-    return 0;
+    return EXIT_SUCCESS;
 }

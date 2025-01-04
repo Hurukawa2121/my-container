@@ -24,11 +24,11 @@ int test_resources(void) {
     // 環境依存なので、一旦呼び出してエラーが出ないか程度を見る
     if (resources(&dummy_config) != 0) {
         fprintf(stderr, "resources() returned error\n");
-        return 1;
+        return EXIT_FAILURE;
     }
     if (free_resources(&dummy_config) != 0) {
         fprintf(stderr, "free_resources() returned error\n");
-        return 1;
+        return EXIT_FAILURE;
     }
-    return 0;
+    return EXIT_SUCCESS;
 }

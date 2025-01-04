@@ -18,9 +18,13 @@
 // 適当なホスト名を決める
 static int choose_hostname(char *buff, size_t len) {
     snprintf(buff, len, "mycontainer-%d", getpid());
-    return 0;
+    return EXIT_SUCCESS;
 }
 
+/**
+ * コンテナを作るために、
+ * 1. ユーザー名前空間を作成
+ */
 int main(int argc, char **argv) {
     struct child_config config;
     memset(&config, 0, sizeof(config));
@@ -50,20 +54,20 @@ int main(int argc, char **argv) {
             break;
         default:
             fprintf(stderr, "Usage: %s -u UID -m MOUNTDIR -c COMMAND [ARGS...]\n", argv[0]);
-            return 1;
+            return EXIT_FAILURE;
         }
     }
 
     if (!config.argc || !config.mount_dir) {
         fprintf(stderr, "Usage: %s -u UID -m /path -c /bin/sh [args]\n", argv[0]);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Linuxバージョンチェック
     struct utsname host;
     if (uname(&host) < 0) {
         perror("uname failed");
-        return 1;
+        return EXIT_FAILURE;
     }
     fprintf(stderr, "Running on %s %s\n", host.sysname, host.release);
 
@@ -74,12 +78,12 @@ int main(int argc, char **argv) {
     // ソケットペア作成
     if (socketpair(AF_LOCAL, SOCK_SEQPACKET, 0, sockets) != 0) {
         perror("socketpair failed");
-        return 1;
+        return EXIT_FAILURE;
     }
     // FD_CLOEXEC
     if (fcntl(sockets[0], F_SETFD, FD_CLOEXEC) != 0) {
         perror("fcntl failed");
-        return 1;
+        return EXIT_FAILURE;
     }
     config.fd = sockets[1];
 
@@ -88,7 +92,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "resources failed\n");
         close(sockets[0]);
         close(sockets[1]);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     size_t STACK_SIZE = 1024 * 1024;
@@ -98,7 +102,7 @@ int main(int argc, char **argv) {
         close(sockets[0]);
         close(sockets[1]);
         free_resources(&config);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     int clone_flags = CLONE_NEWNS
@@ -116,7 +120,7 @@ int main(int argc, char **argv) {
         close(sockets[0]);
         close(sockets[1]);
         free_resources(&config);
-        return 1;
+        return EXIT_FAILURE;
     }
     close(sockets[1]); // 子側の fd を閉じる
 
@@ -128,7 +132,7 @@ int main(int argc, char **argv) {
         free(stack);
         close(sockets[0]);
         free_resources(&config);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // 子プロセス終了待ち
