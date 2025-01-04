@@ -122,7 +122,9 @@ int free_resources(struct child_config *config) {
 
     int fd = open(parent_cgroup, O_WRONLY);
     if (fd >= 0) {
-        write(fd, my_pid, strlen(my_pid));
+        if (write(fd, my_pid, strlen(my_pid)) < 0) {
+	    fprintf(stderr, "write to %s failed: %m\n", parent_cgroup);
+	}
         close(fd);
     }
 
