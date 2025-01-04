@@ -7,7 +7,7 @@
 1.  依存パッケージをインストール
 ```sh
 $ sudo apt update
-$ sudo apt install -y build-essential libcap-dev libseccomp-dev
+$ sudo apt install -y build-essential libcap-dev libseccomp-dev cmake
 ```
 
 2. Makefile があるディレクトリへ移動
@@ -35,7 +35,8 @@ $ make clean
 
 ```
 .
-├── Makefile
+├── CMakeLists.txt
+├── build
 ├── include
 │   ├── child.h
 │   ├── container.h

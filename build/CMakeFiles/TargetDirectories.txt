@@ -1,0 +1,5 @@
+/home/ubuntu/my_container/build/CMakeFiles/container_app.dir
+/home/ubuntu/my_container/build/CMakeFiles/test_app.dir
+/home/ubuntu/my_container/build/CMakeFiles/test.dir
+/home/ubuntu/my_container/build/CMakeFiles/edit_cache.dir
+/home/ubuntu/my_container/build/CMakeFiles/rebuild_cache.dir

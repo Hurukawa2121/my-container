@@ -1,0 +1,1 @@
+/usr/bin/cc  -Wall -Werror -O2 -g CMakeFiles/container_app.dir/src/main.c.o CMakeFiles/container_app.dir/src/child.c.o CMakeFiles/container_app.dir/src/container.c.o CMakeFiles/container_app.dir/src/resources.c.o CMakeFiles/container_app.dir/src/userns.c.o -o container_app  -lcap -lseccomp 

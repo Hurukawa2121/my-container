@@ -1,0 +1,1 @@
+/usr/bin/cc  -Wall -Werror -O2 -g CMakeFiles/test_app.dir/test/main.c.o CMakeFiles/test_app.dir/test/resources.c.o CMakeFiles/test_app.dir/src/resources.c.o -o test_app  -lcap -lseccomp 
